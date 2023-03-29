@@ -1,3 +1,8 @@
+library(class)
+library(tidyverse)
+library(bestglm)
+library(clustMixType)
+
 data <- read.csv("C:\\Users\\jakel\\OneDrive\\Documents\\.Uni Stuff\\.Winter 2023\\STAT 362\\ObesityDataSet_raw_and_data_sinthetic.csv") 
 
 #Create BMI variable
@@ -11,9 +16,19 @@ data$NObeyesdad <- factor(data$NObeyesdad,
 #Rounded all synthetic data from floats to integers
 data$FAF <- round(data$FAF)
 data$TUE <- round(data$TUE)
+data$FCVC <- round(data$FCVC)
+data$NCP <- round(data$NCP)
+data$TUE <- round(data$TUE)
+data$CH2O <- round(data$CH2O)
+
+data$FCVC <- factor(data$FCVC, 
+                    levels = c(1,2,3))
+
+#Add column for obesity for no obesity
+data$Obesity <- ifelse(data$NObeyesdad=="Obesity_Type_I"|data$NObeyesdad=="Obesity_Type_II"|data$NObeyesdad=="Obesity_Type_III",
+                        "yes","no")
 
 #Data Visualization
-library(tidyverse)
 #Bar chart of counts for obesity categories
 data %>% 
   ggplot(mapping=aes(x=NObeyesdad))+
@@ -44,6 +59,46 @@ ggplot(data, aes(x="", y=amount, fill=category)) +
   geom_text(aes(label = paste0(amount, "%")), position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+
   ggtitle("Pie chart of the number of main meals")
+
+#Pie chart of "do you eat high caloric meals frequently"
+data <- read.csv("Custom Office Templates/ObesityDataSet_raw_and_data_sinthetic version 2.csv")
+library(ggplot2)
+library(dplyr)
+data$FAVC <- ifelse(data$FAVC == "yes", 1, 0)
+datayes <- sum(data$FAVC == '1')
+datano <- sum(data$FAVC == '0')
+data <- data.frame("category" = c("Yes","No"),
+                   "amount" = c(round(datayes/(length(data$FAVC))*100),
+                              round(datano/(length(data$FAVC))*100)))
+
+ggplot(data, aes(x="", y=amount, fill=category)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void()+
+  geom_text(aes(label = paste0(amount, "%")),
+  position = position_stack(vjust=0.5)) +
+  labs(x = NULL, y = NULL, fill = NULL)+
+  ggtitle("Pie chart of frequency of high caloric meals")
+  
+#Pie chart of "Frequency of physical activity per week"
+data <- read.csv("Custom Office Templates/ObesityDataSet_raw_and_data_sinthetic version 2.csv")
+library(ggplot2)
+library(dplyr)
+roundata3 <- round(data$FAF)
+data <- data.frame("category" = c("None","1-2 days","2-4 days","4-5 days"),
+                   "amount" = c(round(length(which(roundata3 == 0))/length(roundata3)*100),
+                                round(length(which(roundata3 == 1))/length(roundata3)*100),
+                                round(length(which(roundata3 == 2))/length(roundata3)*100),
+                                round(length(which(roundata3 == 3))/length(roundata3)*100)))
+
+ggplot(data, aes(x="", y=amount, fill=category)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void()+
+  geom_text(aes(label = paste0(amount, "%")),
+            position = position_stack(vjust=0.5)) +
+  labs(x = NULL, y = NULL, fill = NULL)+
+ggtitle("Pie chart of frequency of physical activity per week")
 
 # PHYSICAL ACTIVITY
 # 1. factor FAF (physical activity)
@@ -87,6 +142,27 @@ data %>%
 
 #Data Analysis
 
+#Step-wise Regression?
+#Removed height, weight, and overweight class from the data set
+data_removed <- data[,-c(3,4,17)]
+
+#Stepwise regression
+full_model <- lm (BMI ~ ., data = data_removed)
+step(full_model, direction = "backward")
+
+#New model from regression
+model <- lm(formula = BMI ~ Gender + Age + family_history_with_overweight + 
+    FAVC + FCVC + NCP + CAEC + CH2O + SCC + FAF + CALC + MTRANS,
+    data = data_removed)
+summary(model)
+
+#Random Forest
+library(randomForest)
+forest_train <-
+  randomForest(BMI ~ ., data = data_removed, importance = TRUE)
+varImpPlot(forest_train)
+
+
 #T-tests
 
 #T-test for bmi and smoking (no-smoking vs smoking)
@@ -97,53 +173,87 @@ t.test(data$BMI[data$FAF==0],data$BMI[data$FAF>=1])
 t.test(data$BMI[data$TUE<2],data$BMI[data$TUE==2])
 #T-test for bmi and high caloric food eating (no vs yes)
 t.test(data$BMI[data$FAVC=="no"],data$BMI[data$FAVC=="yes"])
+
+#T-test for bmi and FCVC(veggie consumption) (never vs always)
+t.test(data$BMI[data$FCVC==1],data$BMI[data$FCVC==3])
 #T-test for bmi and family history
 t.test(data$BMI[data$family_history_with_overweight=="no"],data$BMI[data$family_history_with_overweight=="yes"])
+
+#Prop Tests
+#Family History
+none <- filter(data,family_history_with_overweight == "no")
+history <- filter(data,family_history_with_overweight == "yes")
+prop.test(c(nrow(filter(none,Obesity == "yes")), nrow(filter(history,Obesity == "yes"))),c(nrow(none),nrow(history)))
+
+#FCVC
+no_veg <- filter(data,FCVC == "no")
+veg <- filter(data,FCVC == "yes")
+prop.test(c(nrow(filter(none,Obesity == "yes")), nrow(filter(history,Obesity == "yes"))),c(nrow(none),nrow(history)))
+
+#FAF
+FAF_no <- filter(data, FAF == 0)
+FAF_1 <- filter(data, FAF == 1)
+FAF_2 <- filter(data, FAF == 2)
+FAF_3 <- filter(data, FAF == 3)
+prop.test(c(nrow(filter(FAF_no,Obesity == "yes")), nrow(filter(FAF_1,Obesity == "yes")),nrow(filter(FAF_2,Obesity == "yes")),nrow(filter(FAF_3,Obesity == "yes"))),c(nrow(FAF_no),nrow(FAF_1),nrow(FAF_2),nrow(FAF_3)))
+
+#SCC
+no_monitor <- filter(data,SCC=="no")
+monitor <- filter(data,SCC=="yes")
+prop.test(c(nrow(filter(no_monitor,Obesity == "yes")), nrow(filter(monitor,Obesity == "yes"))),c(nrow(no_monitor),nrow(monitor)))
+
 
 
 #KS Test
 # smoking
-smokers <- data$bmi[data$SMOKE == "no"]
-nonsmokers <- data$bmi[data$SMOKE == "yes"]
+smokers <- data$BMI[data$SMOKE == "no"]
+nonsmokers <- data$BMI[data$SMOKE == "yes"]
 ks.test(smokers, nonsmokers)
 
 # physical activity
-sedentary <- data$bmi[data$FAF == 0]
-active <- data$bmi[data$FAF >= 1]
+sedentary <- data$BMI[data$FAF == 0]
+active <- data$BMI[data$FAF >= 1]
 ks.test(sedentary, active)
 
 # tech usage
-less <- data$bmi[data$TUE < 2]
-more <- data$bmi[data$TUE == 2]
+less <- data$BMI[data$TUE < 2]
+more <- data$BMI[data$TUE == 2]
 ks.test(less, more)
 
 # high calorie food intake
-nonfrequent <- data$bmi[data$FAVC == "no"]
-frequent <- data$bmi[data$FAVC == "yes"]
+nonfrequent <- data$BMI[data$FAVC == "no"]
+frequent <- data$BMI[data$FAVC == "yes"]
 ks.test(nonfrequent, frequent)
 
 # family history of obesity
-none <- data$bmi[data$family_history_with_overweight == "no"]
-history <- data$bmi[data$family_history_with_overweight == "yes"]
+none <- data$BMI[data$family_history_with_overweight == "no"]
+history <- data$BMI[data$family_history_with_overweight == "yes"]
 ks.test(none, history)
 
 #Knn Classification
+set.seed(1)
+random_index <- sample(nrow(data),469)
 
+train <- data[random_index, -c(3:4,18,19)]
+test <- data[-random_index, -c(3:4,18,19)]
 
+train_labels <- data[random_index, 19]
+test_labels <- data[-random_index, 19]
 
+train_n <- train
+test_n <- test
 
-#Linear Regression? Step-wise Regression?
-data_rem <- select(data, c(-Height,-Weight,-NObeyesdad))
+train_min <- apply(train, 2, min)
+train_max <- apply(train, 2, max)
 
+for (i in 1:ncol(train)) {
+  train_n[, i] <- (train[, i] - train_min[i]) / (train_max[i] - train_min[i]) 
+  # use the min and max from training data to normalize the testing data
+  test_n[, i] <- (test[, i] - train_min[i]) / (train_max[i] - train_min[i]) 
+}
 
-full_model <- lm (BMI ~ ., data = data_rem)
-step (full_model, direction = "backward")
-
-model <- lm(formula = BMI ~ Gender + Age + family_history_with_overweight + 
-               FAVC + FCVC + NCP + CAEC + CH2O + SCC + FAF + TUE + CALC + 
-               MTRANS, data = data_rem)
-summary(model)
-bestglm()
+knn_predicted <- knn(train = train_n, test = test_n, 
+                     cl = train_labels, k = 21)
 
 
 #K-means clustering
@@ -168,11 +278,11 @@ ggplot(mapping = aes(x = 1:10, y = WSS)) +
   scale_x_discrete(name = "k", limits = factor(1:10)) +
   labs(title = "Elbow Method")
 #4 clusters is ideal
-library(clustMixType)
 
-data_kproto <- kproto(x=data[,c(13,18)], k = 4, nstart = 25)
+
+#clustering of veggies and bmi
+data_kproto <- kproto(x=data[,c(7,18)], k = 4, nstart = 25)
 data_kproto$centers
 data_kproto$cluster
-clprofiles(data_kproto,  data[, c(13,18)], vars=NULL, col=NULL)
-#no exercise = high variance, exercise = low bmi generally
+clprofiles(data_kproto,  data[, c(7,18)], vars=NULL, col=NULL)
 
