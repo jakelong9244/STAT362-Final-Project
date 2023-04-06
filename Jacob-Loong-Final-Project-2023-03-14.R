@@ -3,7 +3,7 @@ library(tidyverse)
 library(bestglm)
 library(clustMixType)
 
-data <- read.csv("C:\\Users\\jakel\\OneDrive\\Documents\\.Uni Stuff\\.Winter 2023\\STAT 362\\ObesityDataSet_raw_and_data_sinthetic.csv") 
+data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv") 
 
 #Create BMI variable
 data$BMI <- data$Weight / (data$Height * data$Height)
@@ -47,58 +47,86 @@ ggplot(data,aes(x=BMI,fill=Gender))+
 
 #Pie chart of the "number of main meals" category
 roundata1 <- round(data$NCP)
-data <- data.frame("category" = c("Between 1 & 2", "Three", "More than three"),
+data_NCP <- data.frame("category" = c("Between 1 & 2", "Three", "More than three"),
                    "amount" = c(round(length(which(roundata1 < 3))/length(roundata1)*100),
                                 round(length(which(roundata1 == 3))/length(roundata1)*100),
                                 round(length(which(roundata1 > 3))/length(roundata1)*100)))
 
-ggplot(data, aes(x="", y=amount, fill=category)) +
+ggplot(data_NCP, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
   theme_void()+
   geom_text(aes(label = paste0(amount, "%")), position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+
-  ggtitle("Pie chart of the number of main meals")
+  ggtitle("Number of Main Meals")
 
 #Pie chart of "do you eat high caloric meals frequently"
-data <- read.csv("Custom Office Templates/ObesityDataSet_raw_and_data_sinthetic version 2.csv")
-library(ggplot2)
-library(dplyr)
 data$FAVC <- ifelse(data$FAVC == "yes", 1, 0)
 datayes <- sum(data$FAVC == '1')
 datano <- sum(data$FAVC == '0')
-data <- data.frame("category" = c("Yes","No"),
+data_FAVC <- data.frame("category" = c("Yes","No"),
                    "amount" = c(round(datayes/(length(data$FAVC))*100),
                               round(datano/(length(data$FAVC))*100)))
 
-ggplot(data, aes(x="", y=amount, fill=category)) +
+ggplot(data_FAVC, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
   theme_void()+
   geom_text(aes(label = paste0(amount, "%")),
   position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+
-  ggtitle("Pie chart of frequency of high caloric meals")
+  ggtitle("Frequency of High Caloric Meals")
   
 #Pie chart of "Frequency of physical activity per week"
-data <- read.csv("Custom Office Templates/ObesityDataSet_raw_and_data_sinthetic version 2.csv")
-library(ggplot2)
-library(dplyr)
 roundata3 <- round(data$FAF)
-data <- data.frame("category" = c("None","1-2 days","2-4 days","4-5 days"),
+data_FAF <- data.frame("category" = c("None","1-2 days","2-4 days","4-5 days"),
                    "amount" = c(round(length(which(roundata3 == 0))/length(roundata3)*100),
                                 round(length(which(roundata3 == 1))/length(roundata3)*100),
                                 round(length(which(roundata3 == 2))/length(roundata3)*100),
                                 round(length(which(roundata3 == 3))/length(roundata3)*100)))
 
-ggplot(data, aes(x="", y=amount, fill=category)) +
+ggplot(data_FAF, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
   theme_void()+
   geom_text(aes(label = paste0(amount, "%")),
             position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+
-ggtitle("Pie chart of frequency of physical activity per week")
+  ggtitle("Frequency of Physical Activity per Week")
+
+
+#Pie chart of "Mode of transportation"
+data_MTRANS <- data.frame("category" = c("Automobile", "Other", "Public Transportation", "Walking"),
+                          "amount" = c(ifelse(nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100,round(nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100)),
+                                       ifelse(nrow(filter(data, MTRANS %in% c("Motorbike","Bike")))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS %in% c("Motorbike","Bike")))/length(data$MTRANS)*100, round(nrow(filter(data, MTRANS %in% c("Motorbike","Bike")))/length(data$MTRANS)*100)),
+                                       ifelse(nrow(filter(data, MTRANS == "Public_Transportation"))/length(data$MTRANS)*100 < 1, nrow(filter(data, MTRANS == "Public_Transportation"))/length(data$MTRANS)*100, round(nrow(filter(data, MTRANS == "Public_Transportation"))/length(data$MTRANS)*100)),
+                                       ifelse(nrow(filter(data, MTRANS == "Walking"))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS == "Walking"))/length(data$MTRANS)*100, round(nrow(filter(data, MTRANS == "Walking"))/length(data$MTRANS)*100))))
+
+ggplot(data_MTRANS, aes(x="", y=amount, fill=category)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void() +
+  geom_text(aes(label = paste0(ifelse(amount < 1,"<1",amount), "%")), position = position_stack(vjust=0.5)) +
+  labs(x = NULL, y = NULL, fill = NULL) +
+  ggtitle("Mode of Transport")
+
+#Summary Statistics
+summary(data$BMI)
+summary(data$Age)
+summary(data$Height)
+summary(data$Weight)
+
+sd(data$BMI)
+sd(data$Age)
+sd(data$Height)
+sd(data$Weight)
+
+#Boxplots
+boxplot(data$BMI,main='Boxplot of BMI',ylab="BMI")
+boxplot(data$Age,main='Boxplot of Age',ylab="Age")
+boxplot(data$Height,main='Boxplot of Height',ylab="Height (m)")
+boxplot(data$Weight,main='Boxplot of Weight',ylab="Weight (kg)")
+
 
 # PHYSICAL ACTIVITY
 # 1. factor FAF (physical activity)
@@ -286,9 +314,4 @@ data_kproto$cluster
 clprofiles(data_kproto,  data[, c(13,18)], vars=NULL, col=NULL)
 #no exercise = high variance, exercise = low bmi generally
 
-#clustering of veggies and bmi
-data_kproto <- kproto(x=data[,c(7,18)], k = 4, nstart = 25)
-data_kproto$centers
-data_kproto$cluster
-clprofiles(data_kproto,  data[, c(7,18)], vars=NULL, col=NULL)
 
