@@ -2,6 +2,11 @@ library(class)
 library(tidyverse)
 library(bestglm)
 library(clustMixType)
+library(ggplot2)
+library(dplyr)
+library(randomForest)
+library(caret)
+library(pROC)
 
 data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv") 
 
@@ -315,3 +320,49 @@ clprofiles(data_kproto,  data[, c(13,18)], vars=NULL, col=NULL)
 #no exercise = high variance, exercise = low bmi generally
 
 
+#Cross-Validation
+k <- 10
+# the result is a list
+folds <- createFolds(data$Obesity, k = k)
+accuracy <- rep(0, k)
+AUC <- rep(0, k)
+
+#Cross-validation using randomForest
+for (i in 1:k) {
+  train_data  <- data[folds[[i]], ]
+  test_data <- data[-folds[[i]], ]
+  forest_train <- randomForest(Obesity ~ Age + FCVC + family_history_with_overweight, data = train_data, importance = TRUE)
+  
+  # Prediction
+  prob <- predict(forest_train, test_data, type = "prob")
+  predicted_class <- ifelse(prob[,2] > 0.5, "yes", "no")
+  
+  # Compute accuracy and AUC
+  accuracy[i] <- mean(predicted_class == test_data$Obesity)
+  AUC[i] <- auc(roc(predictor = as.numeric(prob[,2]), response = test_data$Obesity))
+}
+
+accuracy
+mean(accuracy)
+AUC
+mean(AUC)
+
+#Cross-validation using glm
+for (i in 1:k) {
+  train_data  <- data[folds[[i]], ]
+  test_data <- data[-folds[[i]], ]
+  fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight, data = train_data, family = binomial)
+  
+  # Prediction
+  prob <- predict(fit_simple, test_data, type = "response")
+  predicted_class <- ifelse(prob > 0.5, "yes", "no")
+  
+  # Compute accuracy and AUC
+  accuracy[i] <- mean(predicted_class == test_data$Obesity)
+  AUC[i] <- auc(roc(predictor = as.numeric(prob), response = test_data$Obesity))
+}
+
+accuracy
+mean(accuracy)
+AUC
+mean(AUC)
