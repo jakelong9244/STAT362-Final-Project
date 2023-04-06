@@ -279,6 +279,12 @@ ggplot(mapping = aes(x = 1:10, y = WSS)) +
   labs(title = "Elbow Method")
 #4 clusters is ideal
 
+#Clustering of exercise and bmi
+data_kproto <- kproto(x=data[,c(13,18)], k = 4, nstart = 25)
+data_kproto$centers
+data_kproto$cluster
+clprofiles(data_kproto,  data[, c(13,18)], vars=NULL, col=NULL)
+#no exercise = high variance, exercise = low bmi generally
 
 #clustering of veggies and bmi
 data_kproto <- kproto(x=data[,c(7,18)], k = 4, nstart = 25)
