@@ -109,7 +109,6 @@ ggplot(data_FAF, aes(x="", y=amount, fill=category)) +
   labs(x = NULL, y = NULL, fill = NULL)+
   ggtitle("Frequency of Physical Activity per Week")
 
-
 #Pie chart of "Mode of transportation"
 data_MTRANS <- data.frame("category" = c("Automobile", "Other", "Public Transportation", "Walking"),
                           "amount" = c(ifelse(nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100,round(nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100)),
@@ -202,7 +201,7 @@ boxplot(data$Weight,main='Boxplot of Weight',ylab="Weight (kg)")
 
 #Stepwise regression
 #Dataset with height, weight, and overweight class removed
-data_removed <- data[,-c(3,4,17)]
+data_removed <- data[,-c(3,4,17,19)]
 full_model <- lm (BMI ~ ., data = data_removed)
 step(full_model, direction = "backward")
 
@@ -211,7 +210,7 @@ model <- lm(formula = BMI ~ Gender + Age + family_history_with_overweight +
     FAVC + FCVC + NCP + CAEC + CH2O + SCC + FAF + CALC + MTRANS,
     data = data_removed)
 summary(model)
-
+  
 #Random Forest
 forest_train <-
   randomForest(BMI ~ ., data = data_removed, importance = TRUE)
@@ -321,7 +320,7 @@ ggplot(mapping = aes(x = 1:10, y = WSS)) +
 #4 clusters is ideal
 
 #K-means clustering
-#Clustering of Age and BMI (young ppl with high variance whereas old not[they dead])
+#Clustering of Age and BMI (young ppl with high variance whereas old has little variance)
 data_kmeans <- kmeans(x=scale(data[,c(2,18)]), centers = 4, nstart = 25)
 data_kmeans$centers
 fviz_cluster(data_kmeans,  data = data[, c(2,18)], geom = "point")
