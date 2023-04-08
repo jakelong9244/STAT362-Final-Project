@@ -14,7 +14,7 @@ library(factoextra)
 # VARIABLE INITIALIZATON
 
 #Read raw csv file
-data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv") 
+data <- read.csv("C:\\Users\\jakel\\OneDrive\\Documents\\.Uni Stuff\\.Winter 2023\\STAT 362\\Final_Project\\ObesityDataSet_raw_and_data_sinthetic.csv") 
 
 #Create BMI variable
 data$BMI <- data$Weight / (data$Height * data$Height)
@@ -125,39 +125,6 @@ ggplot(data_MTRANS, aes(x="", y=amount, fill=category)) +
   labs(x = NULL, y = NULL, fill = NULL) +
   ggtitle("Mode of Transport")
 
-#Summary Statistics
-summary(data$BMI)
-summary(data$Age)
-summary(data$Height)
-summary(data$Weight)
-
-sd(data$BMI)
-sd(data$Age)
-sd(data$Height)
-sd(data$Weight)
-
-#Boxplots
-boxplot(data$BMI,main='Boxplot of BMI',ylab="BMI")
-boxplot(data$Age,main='Boxplot of Age',ylab="Age")
-boxplot(data$Height,main='Boxplot of Height',ylab="Height (m)")
-boxplot(data$Weight,main='Boxplot of Weight',ylab="Weight (kg)")
-
-  ggtitle("Frequency of Physical Activity per Week")
-
-#Pie chart of "Mode of Transportation"
-data_MTRANS <- data.frame("category" = c("Automobile", "Other (Motorbike/Bike)", "Public Transportation", "Walking"),
-                          "amount" = c(ifelse(nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100,round(nrow(filter(data, MTRANS == "Automobile"))/length(data$MTRANS)*100)),
-                                       ifelse(nrow(filter(data, MTRANS %in% c("Motorbike","Bike")))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS %in% c("Motorbike","Bike")))/length(data$MTRANS)*100, round(nrow(filter(data, MTRANS %in% c("Motorbike","Bike")))/length(data$MTRANS)*100)),
-                                       ifelse(nrow(filter(data, MTRANS == "Public_Transportation"))/length(data$MTRANS)*100 < 1, nrow(filter(data, MTRANS == "Public_Transportation"))/length(data$MTRANS)*100, round(nrow(filter(data, MTRANS == "Public_Transportation"))/length(data$MTRANS)*100)),
-                                       ifelse(nrow(filter(data, MTRANS == "Walking"))/length(data$MTRANS)*100 < 1,nrow(filter(data, MTRANS == "Walking"))/length(data$MTRANS)*100, round(nrow(filter(data, MTRANS == "Walking"))/length(data$MTRANS)*100))))
-ggplot(data_MTRANS, aes(x="", y=amount, fill=category)) +
-  geom_bar(stat="identity", width=1) +
-  coord_polar("y", start=0) +
-  theme_void() +
-  geom_text(aes(label = paste0(ifelse(amount < 1,"<1",amount), "%")), position = position_stack(vjust=0.5)) +
-  labs(x = NULL, y = NULL, fill = NULL) +
-  ggtitle("Mode of Transport")
-
 #Pie chart of the "Obesity" category
 data_NObeyesdad <- data.frame("category" = c("Insufficient Weight", "Normal Weight", "Overweight Level I", "Overweight Level II", "Obesity Type I", "Obesity Type II", "Obesity Type III"),
                               "amount" = c(round(nrow(filter(data, data$NObeyesdad == "Insufficient_Weight"))/length(data$NObeyesdad)*100),
@@ -211,6 +178,23 @@ data %>%
     fill = "Response"
   ) + 
   theme_bw()
+
+#Summary Statistics
+summary(data$BMI)
+summary(data$Age)
+summary(data$Height)
+summary(data$Weight)
+
+sd(data$BMI)
+sd(data$Age)
+sd(data$Height)
+sd(data$Weight)
+
+#Boxplots
+boxplot(data$BMI,main='Boxplot of BMI',ylab="BMI")
+boxplot(data$Age,main='Boxplot of Age',ylab="Age")
+boxplot(data$Height,main='Boxplot of Height',ylab="Height (m)")
+boxplot(data$Weight,main='Boxplot of Weight',ylab="Weight (kg)")
 
 
 #---------------------------------------------------------------------------------------------------------------------------------------------
@@ -314,19 +298,20 @@ test_n <- test
 
 train_min <- apply(train, 2, min)
 train_max <- apply(train, 2, max)
-
 for (i in 1:ncol(train)) {
   train_n[, i] <- (train[, i] - train_min[i]) / (train_max[i] - train_min[i]) 
   # use the min and max from training data to normalize the testing data
   test_n[, i] <- (test[, i] - train_min[i]) / (train_max[i] - train_min[i]) 
 }
-
 knn_predicted <- knn(train = train_n, test = test_n, 
                      cl = train_labels, k = 21)
 
-#K-means clustering
-
-#Elbow method
+#Elbow Method
+WSS <- rep(0, 10)
+for (k in 1:10) {
+  # extract the total within-group sum of squared errors
+  WSS[k] = kproto(x=data[,c(13,18)], k = 6, nstart = 25)$tot.withinss
+}
 ggplot(mapping = aes(x = 1:10, y = WSS)) +
   geom_line() + 
   geom_point() +
@@ -335,14 +320,18 @@ ggplot(mapping = aes(x = 1:10, y = WSS)) +
   labs(title = "Elbow Method")
 #4 clusters is ideal
 
+#K-means clustering
+#Clustering of Age and BMI (young ppl with high variance whereas old not[they dead])
+data_kmeans <- kmeans(x=scale(data[,c(2,18)]), centers = 4, nstart = 25)
+data_kmeans$centers
+fviz_cluster(data_kmeans,  data = data[, c(2,18)], geom = "point")
 
-#clustering of veggies and bmi
-data_kproto <- kproto(x=data[,c(7,18)], k = 4, nstart = 25)
+#Clustering of exercise and bmi
+data_kproto <- kproto(x=data[,c(13,18)], k = 4, nstart = 25)
 data_kproto$centers
 data_kproto$cluster
 clprofiles(data_kproto,  data[, c(13,18)], vars=NULL, col=NULL)
 #no exercise = high variance, exercise = low bmi generally
-
 
 #Cross-Validation
 k <- 10
