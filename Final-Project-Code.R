@@ -210,7 +210,7 @@ model <- lm(formula = BMI ~ Gender + Age + family_history_with_overweight +
     FAVC + FCVC + NCP + CAEC + CH2O + SCC + FAF + CALC + MTRANS,
     data = data_removed)
 summary(model)
-  
+
 #Random Forest
 forest_train <-
   randomForest(BMI ~ ., data = data_removed, importance = TRUE)
@@ -256,6 +256,7 @@ prop.test(c(nrow(filter(prop_FAF_no,Obesity == "yes")), nrow(filter(prop_FAF_1,O
 prop_no_monitor <- filter(data,SCC=="no")
 prop_monitor <- filter(data,SCC=="yes")
 prop.test(c(nrow(filter(prop_no_monitor,Obesity == "yes")), nrow(filter(prop_monitor,Obesity == "yes"))),c(nrow(prop_no_monitor),nrow(prop_monitor)))
+table(data$SCC,data$Obesity)
 
 #KS Test for smoking
 ks_smokers <- data$BMI[data$SMOKE == "no"]
@@ -281,6 +282,11 @@ ks.test(ks_nonfrequent, ks_frequent)
 ks_none <- data$BMI[data$family_history_with_overweight == "no"]
 ks_history <- data$BMI[data$family_history_with_overweight == "yes"]
 ks.test(ks_none, ks_history)
+
+#KS test for age 
+ks_yes <- data$Age[data$Obesity == "yes"]
+ks_no <- data$Age[data$Obesity == "no"]
+ks.test(ks_yes, ks_no)
 
 #Knn Classification
 set.seed(1)
@@ -364,6 +370,26 @@ for (i in 1:k) {
   train_data  <- data[folds[[i]], ]
   test_data <- data[-folds[[i]], ]
   fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight, data = train_data, family = binomial)
+  
+  # Prediction
+  prob <- predict(fit_simple, test_data, type = "response")
+  predicted_class <- ifelse(prob > 0.5, "yes", "no")
+  
+  # Compute accuracy and AUC
+  accuracy[i] <- mean(predicted_class == test_data$Obesity)
+  AUC[i] <- auc(roc(predictor = as.numeric(prob), response = test_data$Obesity))
+}
+
+accuracy
+mean(accuracy)
+AUC
+mean(AUC)
+
+#Cross-validation with new variables
+for (i in 1:k) {
+  train_data  <- data[folds[[i]], ]
+  test_data <- data[-folds[[i]], ]
+  fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight + TUE + FAVC, data = train_data, family = binomial)
   
   # Prediction
   prob <- predict(fit_simple, test_data, type = "response")
