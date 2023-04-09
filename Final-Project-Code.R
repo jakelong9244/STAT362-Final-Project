@@ -387,7 +387,7 @@ mean(AUC)
 
 #Cross-validation with new variables
 for (i in 1:k) {
-  train_data  <- data[folds[[i]], ]
+  train_data  <- data[folds[[i]], ] 
   test_data <- data[-folds[[i]], ]
   fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight + TUE + FAVC, data = train_data, family = binomial)
   
