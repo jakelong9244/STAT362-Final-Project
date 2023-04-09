@@ -14,7 +14,7 @@ library(factoextra)
 # VARIABLE INITIALIZATON
 
 #Read raw csv file
-data <- read.csv("C:\\Users\\jakel\\OneDrive\\Documents\\.Uni Stuff\\.Winter 2023\\STAT 362\\Final_Project\\ObesityDataSet_raw_and_data_sinthetic.csv") 
+data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv", stringsAsFactors =TRUE) 
 
 #Create BMI variable
 data$BMI <- data$Weight / (data$Height * data$Height)
@@ -26,23 +26,16 @@ data$Obesity <- factor(ifelse(data$NObeyesdad=="Obesity_Type_I"|data$NObeyesdad=
 #Ordered the variable for obesity category
 data$NObeyesdad <- factor(data$NObeyesdad,
                           levels = c("Insufficient_Weight","Normal_Weight",
-                                    "Overweight_Level_I","Overweight_Level_II",
-                                    "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"),
+                                     "Overweight_Level_I","Overweight_Level_II",
+                                     "Obesity_Type_I","Obesity_Type_II","Obesity_Type_III"),
                           ordered = TRUE)
 
 #Rounded all synthetic data from floats to integers
-data$FAF <- data$FAF %>% 
-  round() %>% 
-  factor(levels = c(0, 1, 2, 3), ordered = TRUE)
-data$TUE <- round(data$TUE)
-data$FCVC <- round(data$FCVC)
-data$NCP <- round(data$NCP)
-data$TUE <- round(data$TUE)
-data$CH2O <- round(data$CH2O)
-data$FCVC <- factor(data$FCVC, levels = c(1,2,3))
-data$Gender <- factor(data$Gender)
-data$FAVC <- factor(data$FAVC, levels = c("no", "yes"))
-
+data$FCVC <- factor(round(data$FCVC))
+data$NCP <- factor(round(data$NCP))
+data$CH2O <- factor(round(data$CH2O))
+data$FAF <- factor(round(data$FAF), levels = c(0, 1, 2, 3), ordered = TRUE)
+data$TUE <- factor(round(data$TUE))
 
 #---------------------------------------------------------------------------------------------------------------------------------------------
 #DATA VISUALIZATION
@@ -68,9 +61,9 @@ ggplot(data,aes(x=BMI,fill=Gender))+
 
 #Pie chart of the "number of main meals" category
 data_NCP <- data.frame("category" = c("Between 1 & 2", "Three", "More than three"),
-                   "amount" = c(round(length(which(data$NCP < 3))/length(data$NCP)*100),
-                                round(length(which(data$NCP == 3))/length(data$NCP)*100),
-                                round(length(which(data$NCP > 3))/length(data$NCP)*100)))
+                       "amount" = c(round(length(which(data$NCP == 1 | data$NCP == 2))/length(data$NCP)*100),
+                                    round(length(which(data$NCP == 3))/length(data$NCP)*100),
+                                    round(length(which(data$NCP == 4))/length(data$NCP)*100)))
 ggplot(data_NCP, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
@@ -83,23 +76,23 @@ ggplot(data_NCP, aes(x="", y=amount, fill=category)) +
 datayes <- sum(data$FAVC == 'yes')
 datano <- sum(data$FAVC == 'no')
 data_FAVC <- data.frame("category" = c("Yes","No"),
-                   "amount" = c(round(datayes/(length(data$FAVC))*100),
-                              round(datano/(length(data$FAVC))*100)))
+                        "amount" = c(round(datayes/(length(data$FAVC))*100),
+                                     round(datano/(length(data$FAVC))*100)))
 ggplot(data_FAVC, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
   theme_void()+
   geom_text(aes(label = paste0(amount, "%")),
-  position = position_stack(vjust=0.5)) +
+            position = position_stack(vjust=0.5)) +
   labs(x = NULL, y = NULL, fill = NULL)+
   ggtitle("Frequent High Caloric Meal Intake")
-  
+
 #Pie chart of "Frequency of physical activity per week"
 data_FAF <- data.frame("category" = c("None","1-2 days","2-4 days","4-5 days"),
-                   "amount" = c(round(length(which(data$FAF == 0))/length(data$FAF)*100),
-                                round(length(which(data$FAF == 1))/length(data$FAF)*100),
-                                round(length(which(data$FAF == 2))/length(data$FAF)*100),
-                                round(length(which(data$FAF == 3))/length(data$FAF)*100)))
+                       "amount" = c(round(length(which(data$FAF == 0))/length(data$FAF)*100),
+                                    round(length(which(data$FAF == 1))/length(data$FAF)*100),
+                                    round(length(which(data$FAF == 2))/length(data$FAF)*100),
+                                    round(length(which(data$FAF == 3))/length(data$FAF)*100)))
 ggplot(data_FAF, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
@@ -143,9 +136,9 @@ ggplot(data_NObeyesdad, aes(x="", y=amount, fill=category)) +
 
 #Pie chart of the "frequency of vegetables in meals" category
 data_FCVC <- data.frame("category" = c("Never", "Sometimes", "Always"),
-                   "amount" = c(round(length(which(data$FCVC == 1))/length(data$FCVC)*100),
-                                round(length(which(data$FCVC == 2))/length(data$FCVC)*100),
-                                round(length(which(data$FCVC == 3))/length(data$FCVC)*100)))
+                        "amount" = c(round(length(which(data$FCVC == 1))/length(data$FCVC)*100),
+                                     round(length(which(data$FCVC == 2))/length(data$FCVC)*100),
+                                     round(length(which(data$FCVC == 3))/length(data$FCVC)*100)))
 ggplot(data_FCVC, aes(x="", y=amount, fill=category)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
@@ -206,9 +199,10 @@ full_model <- lm (BMI ~ ., data = data_removed)
 step(full_model, direction = "backward")
 
 #New model from regression
-model <- lm(formula = BMI ~ Gender + Age + family_history_with_overweight + 
-    FAVC + FCVC + NCP + CAEC + CH2O + SCC + FAF + CALC + MTRANS,
-    data = data_removed)
+model <- lm(formula = BMI ~ Age + family_history_with_overweight + FAVC + 
+              FCVC + NCP + CAEC + CH2O + SCC + FAF + TUE + CALC + MTRANS,
+            data = data_removed)
+
 summary(model)
 
 #Random Forest
@@ -234,16 +228,28 @@ t.test(data$BMI[data$FCVC==1],data$BMI[data$FCVC==3])
 #T-test for bmi and family history
 t.test(data$BMI[data$family_history_with_overweight=="no"],data$BMI[data$family_history_with_overweight=="yes"])
 
+#T-test for BMI and NCP
+NCP_12 <- filter (data, NCP == 1|2)
+NCP_3 <- filter (data, NCP == 3)
+NCP_4 <- filter(data, NCP == 4)
+prop.test(c(
+  nrow(filter(NCP_12, Obesity == "yes")),
+  nrow(filter(NCP_3, Obesity == "yes")),
+  nrow(filter(NCP_4, Obesity == "yes"))),c(nrow(NCP_12),nrow(NCP_3),nrow(NCP_4)))
+table(data$NCP, data$Obesity)
+
 #Prop test for Family History
 prop_none <- filter(data,family_history_with_overweight == "no")
 prop_history <- filter(data,family_history_with_overweight == "yes")
 prop.test(c(nrow(filter(prop_none,Obesity == "yes")), nrow(filter(prop_history,Obesity == "yes"))),c(nrow(prop_none),nrow(prop_history)))
+table(data$family_history_with_overweight, data$Obesity)
 
 #Prop test for frequency of vegetable consumption
 prop_FCVC_1 <- filter(data,FCVC == 1)
 prop_FCVC_2 <- filter(data,FCVC == 2)
 prop_FCVC_3 <- filter(data,FCVC == 3)
 prop.test(c(nrow(filter(prop_FCVC_1,Obesity == "yes")), nrow(filter(prop_FCVC_2,Obesity == "yes")),nrow(filter(prop_FCVC_3,Obesity == "yes"))),c(nrow(prop_FCVC_1),nrow(prop_FCVC_2),nrow(prop_FCVC_3)))
+table(data$FCVC, data$Obesity)
 
 #Prop test for physical activity
 prop_FAF_no <- filter(data, FAF == 0)
@@ -251,6 +257,7 @@ prop_FAF_1 <- filter(data, FAF == 1)
 prop_FAF_2 <- filter(data, FAF == 2)
 prop_FAF_3 <- filter(data, FAF == 3)
 prop.test(c(nrow(filter(prop_FAF_no,Obesity == "yes")), nrow(filter(prop_FAF_1,Obesity == "yes")),nrow(filter(prop_FAF_2,Obesity == "yes")),nrow(filter(prop_FAF_3,Obesity == "yes"))),c(nrow(prop_FAF_no),nrow(prop_FAF_1),nrow(prop_FAF_2),nrow(prop_FAF_3)))
+table(data$FAF, data$Obesity)
 
 #Prop test for monitoring calorie consumption
 prop_no_monitor <- filter(data,SCC=="no")
@@ -387,7 +394,7 @@ mean(AUC)
 
 #Cross-validation with new variables
 for (i in 1:k) {
-  train_data  <- data[folds[[i]], ] 
+  train_data  <- data[folds[[i]], ]
   test_data <- data[-folds[[i]], ]
   fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight + TUE + FAVC, data = train_data, family = binomial)
   
