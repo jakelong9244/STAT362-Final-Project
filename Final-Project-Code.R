@@ -34,7 +34,7 @@ data$NObeyesdad <- factor(data$NObeyesdad,
 data$FCVC <- factor(round(data$FCVC))
 data$NCP <- factor(round(data$NCP))
 data$CH2O <- factor(round(data$CH2O))
-data$FAF <- factor(round(data$FAF), levels = c(0, 1, 2, 3), ordered = TRUE)
+data$FAF <- factor(round(data$FAF), levels = c(0, 1, 2, 3))
 data$TUE <- factor(round(data$TUE))
 
 #---------------------------------------------------------------------------------------------------------------------------------------------
@@ -228,9 +228,9 @@ t.test(data$BMI[data$FCVC==1],data$BMI[data$FCVC==3])
 #T-test for bmi and family history
 t.test(data$BMI[data$family_history_with_overweight=="no"],data$BMI[data$family_history_with_overweight=="yes"])
 
-#T-test for BMI and NCP
-NCP_12 <- filter (data, NCP == 1|2)
-NCP_3 <- filter (data, NCP == 3)
+#prop-test for BMI and NCP
+NCP_12 <- filter(data, NCP == 1|2)
+NCP_3 <- filter(data, NCP == 3)
 NCP_4 <- filter(data, NCP == 4)
 prop.test(c(
   nrow(filter(NCP_12, Obesity == "yes")),
@@ -294,6 +294,11 @@ ks.test(ks_none, ks_history)
 ks_yes <- data$Age[data$Obesity == "yes"]
 ks_no <- data$Age[data$Obesity == "no"]
 ks.test(ks_yes, ks_no)
+
+#KS test for number of main meals
+ks_no_snacks <- data$BMI[data$NCP == 1]
+ks_snacks <- data$BMI[data$NCP == 2 | data$NCP == 3 | data$NCP == 4]
+ks.test(ks_no_snacks, ks_snacks)
 
 #Knn Classification
 set.seed(1)
