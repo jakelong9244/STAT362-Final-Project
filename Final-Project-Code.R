@@ -9,12 +9,11 @@ library(randomForest)
 library(caret)
 library(pROC)
 library(factoextra)
-
 #---------------------------------------------------------------------------------------------------------------------------------------------
-# VARIABLE INITIALIZATON
+# VARIABLE (INITIALIZATON)
 
 #Read raw csv file
-data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv", stringsAsFactors =TRUE) 
+data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv", stringsAsFactors = TRUE) 
 
 #Create BMI variable
 data$BMI <- data$Weight / (data$Height * data$Height)
@@ -206,6 +205,7 @@ model <- lm(formula = BMI ~ Age + family_history_with_overweight + FAVC +
 summary(model)
 
 #Random Forest
+set.seed(1)
 forest_train <-
   randomForest(BMI ~ ., data = data_removed, importance = TRUE)
 varImpPlot(forest_train)
@@ -217,7 +217,7 @@ t.test(data$BMI[data$SMOKE=="no"],data$BMI[data$SMOKE=="yes"])
 t.test(data$BMI[data$FAF==0],data$BMI[data$FAF>=1])
 
 #T-test for bmi and tech usage (less than 5 hours tech usage vs 5 or more hours tech usage)
-t.test(data$BMI[data$TUE<2],data$BMI[data$TUE==2])
+t.test(data$BMI[data$TUE %in% c(0,1)],data$BMI[data$TUE==2])
 
 #T-test for bmi and high caloric food eating (no vs yes)
 t.test(data$BMI[data$FAVC=="no"],data$BMI[data$FAVC=="yes"])
@@ -228,9 +228,11 @@ t.test(data$BMI[data$FCVC==1],data$BMI[data$FCVC==3])
 #T-test for bmi and family history
 t.test(data$BMI[data$family_history_with_overweight=="no"],data$BMI[data$family_history_with_overweight=="yes"])
 
-#prop-test for BMI and NCP
-NCP_12 <- filter(data, NCP == 1|2)
-NCP_3 <- filter(data, NCP == 3)
+
+
+#Prop test for NCP
+NCP_12 <- filter (data, NCP == 1|2)
+NCP_3 <- filter (data, NCP == 3)
 NCP_4 <- filter(data, NCP == 4)
 prop.test(c(
   nrow(filter(NCP_12, Obesity == "yes")),
@@ -265,6 +267,17 @@ prop_monitor <- filter(data,SCC=="yes")
 prop.test(c(nrow(filter(prop_no_monitor,Obesity == "yes")), nrow(filter(prop_monitor,Obesity == "yes"))),c(nrow(prop_no_monitor),nrow(prop_monitor)))
 table(data$SCC,data$Obesity)
 
+#Prop test for tech usage
+prop_tue1 <- filter(data,TUE== 0)
+prop_tue2 <- filter(data,TUE== 1)
+prop_tue3 <- filter(data,TUE== 2)
+prop.test(c(
+  nrow(filter(prop_tue1,Obesity == "yes")), 
+  nrow(filter(prop_tue2, Obesity == "yes")), 
+  nrow(filter(prop_tue3,Obesity == "yes"))),
+  c(nrow(prop_tue1),nrow(prop_tue2),nrow(prop_tue3)))
+table(data$TUE,data$Obesity)
+
 #KS Test for smoking
 ks_smokers <- data$BMI[data$SMOKE == "no"]
 ks_nonsmokers <- data$BMI[data$SMOKE == "yes"]
@@ -276,7 +289,7 @@ ks_active <- data$BMI[data$FAF >= 1]
 ks.test(ks_sedentary, ks_active)
 
 #KS test for tech usage
-ks_less <- data$BMI[data$TUE < 2]
+ks_less <- data$BMI[data$TUE %in% c(0,1)]
 ks_more <- data$BMI[data$TUE == 2]
 ks.test(ks_less, ks_more)
 
@@ -299,29 +312,6 @@ ks.test(ks_yes, ks_no)
 ks_no_snacks <- data$BMI[data$NCP == 1]
 ks_snacks <- data$BMI[data$NCP == 2 | data$NCP == 3 | data$NCP == 4]
 ks.test(ks_no_snacks, ks_snacks)
-
-#Knn Classification
-set.seed(1)
-random_index <- sample(nrow(data),469)
-
-train <- data[random_index, -c(3:4,18,19)]
-test <- data[-random_index, -c(3:4,18,19)]
-
-train_labels <- data[random_index, 19]
-test_labels <- data[-random_index, 19]
-
-train_n <- train
-test_n <- test
-
-train_min <- apply(train, 2, min)
-train_max <- apply(train, 2, max)
-for (i in 1:ncol(train)) {
-  train_n[, i] <- (train[, i] - train_min[i]) / (train_max[i] - train_min[i]) 
-  # use the min and max from training data to normalize the testing data
-  test_n[, i] <- (test[, i] - train_min[i]) / (train_max[i] - train_min[i]) 
-}
-knn_predicted <- knn(train = train_n, test = test_n, 
-                     cl = train_labels, k = 21)
 
 #Elbow Method
 WSS <- rep(0, 10)
@@ -357,7 +347,7 @@ folds <- createFolds(data$Obesity, k = k)
 accuracy <- rep(0, k)
 AUC <- rep(0, k)
 
-#Cross-validation using randomForest
+#Cross-validation using randomForest (Age, FCVC + Family History)
 for (i in 1:k) {
   train_data  <- data[folds[[i]], ]
   test_data <- data[-folds[[i]], ]
@@ -397,11 +387,31 @@ mean(accuracy)
 AUC
 mean(AUC)
 
+#Cross-validation using new variables
+for (i in 1:k) {
+  train_data  <- data[folds[[i]], ]
+  test_data <- data[-folds[[i]], ]
+  forest_train <- randomForest(Obesity ~ Age + FCVC + family_history_with_overweight + TUE + FAVC, data = train_data, importance = TRUE)
+  
+  # Prediction
+  prob <- predict(forest_train, test_data, type = "prob")
+  predicted_class <- ifelse(prob[,2] > 0.5, "yes", "no")
+  
+  # Compute accuracy and AUC
+  accuracy[i] <- mean(predicted_class == test_data$Obesity)
+  AUC[i] <- auc(roc(predictor = as.numeric(prob[,2]), response = test_data$Obesity))
+}
+
+accuracy
+mean(accuracy)
+AUC
+mean(AUC)
+
 #Cross-validation with new variables
 for (i in 1:k) {
   train_data  <- data[folds[[i]], ]
   test_data <- data[-folds[[i]], ]
-  fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight + TUE + FAVC, data = train_data, family = binomial)
+  fit_simple <- glm(Obesity ~ Age + FCVC + family_history_with_overweight + FAVC + TUE, data = train_data, family = binomial)
   
   # Prediction
   prob <- predict(fit_simple, test_data, type = "response")
