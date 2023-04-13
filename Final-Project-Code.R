@@ -13,7 +13,7 @@ library(factoextra)
 # VARIABLE (INITIALIZATON)
 
 #Read raw csv file
-data <- read.csv("ObesityDataSet_raw_and_data_sinthetic.csv", stringsAsFactors = TRUE) 
+data <- read.csv("C:\\Users\\jakel\\OneDrive\\Documents\\.Uni Stuff\\.Winter 2023\\STAT 362\\Final_Project\\ObesityDataSet_raw_and_data_sinthetic.csv", stringsAsFactors = TRUE) 
 
 #Create BMI variable
 data$BMI <- data$Weight / (data$Height * data$Height)
@@ -54,8 +54,8 @@ data %>%
 
 #Histogram of BMI
 ggplot(data,aes(x=BMI,fill=Gender))+
-  geom_histogram()+
-  labs(title="Distribution of BMI by Gender",x="Body Mass Index (BMI)",y="Frequency") +
+  geom_histogram(aes(y=..density..))+
+  labs(title="Distribution of BMI by Gender",x="Body Mass Index (BMI)",y="Density") +
   theme_bw()
 
 #Pie chart of the "number of main meals" category
